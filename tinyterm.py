@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-""" Library and command-line utility for sending serial commands to
-a remote Busybox prompt. """
+""" Minimalistic serial terminal program. Like Minicom or Screen, except
+without any kind of screen-drawing, scroll-trapping, etc. """
 
 import sys
 import argparse
@@ -194,7 +194,6 @@ def main():
     args.baud = int(args.baud)
     console = SerialConsole(args.device, args.baud, args.parity)
     console()
-    return 0
 
 
 if __name__ == "__main__":
