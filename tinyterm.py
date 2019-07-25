@@ -87,41 +87,84 @@ class SerialConsole(object):
 
         self.port.reset_input_buffer()
         self.port.reset_output_buffer()
+        self.ctrl_a = b'\x01'
+        self.stop = False
 
         reopen_stdin()
 
     def __call__(self):
+        """ Runs the terminal, passing data from stdin to the serial port
+        and back. Traps and interpets CTRL+a. """
+
         targets = [sys.stdin, self.port]
-        trapped_control = False
+        trap_next = False
+        self.stop = False
+        outbuf = []
 
         print("--- Press [CTRL+A] and then q to quit. ---")
 
         while True:
             ready = select.select(targets, [], targets)
+
             if self.port in ready[0]:
-                outbound_data = self.port.read()
-                sys.stdout.buffer.write(outbound_data)
+                data = self.port.read()
+                sys.stdout.buffer.write(data)
                 sys.stdout.flush()
 
             if sys.stdin in ready[0]:
-                outbound_data = sys.stdin.read()
-                if b'\x01q' in outbound_data:
-                    print("\n--- Goodbye. ---")
+                data = sys.stdin.read()
+                data = [data[x:x + 1] for x in range(len(data))]
+
+                for char in data:
+                    if trap_next:
+                        outbuf.append(self.interpret(char))
+                        trap_next = False
+                    elif char == self.ctrl_a:
+                        trap_next = True
+                    else:
+                        outbuf.append(char)
+
+                if self.stop:
                     break
 
-                elif trapped_control and outbound_data[0:1] == b'q':
-                    print("\n--- Goodbye. ---")
-                    break
+                self.port.write(b''.join(outbuf))
+                outbuf.clear()
 
-                elif outbound_data[-1:] == b'\x01':
-                    trapped_control = True
-                    self.port.write(outbound_data[:-1])
-                else:
-                    if trapped_control:
-                        trapped_control = False
-                        self.port.write(b'\x01')
+        print("\n--- Goodbye. ---")
 
-                    self.port.write(outbound_data)
+    def interpret(self, char):
+        """ Interprets a trapped control character. Returns a bytes()
+        instance that is sent to the attached port. """
+
+        if char in [b'q', b'Q', b'k', b'K', b'\\']:
+            self.stop = True
+            return b''
+
+        elif char in [b'r', b'R']:
+            commands = [
+                "export TERM=%s" % os.getenv('TERM', 'vt100'),
+                "resize",
+                "reset"
+            ]
+            prefix = bytes("\x01\x0B\ntrue\n", 'utf-8')
+            result = prefix + bytes(';'.join(commands) + '\n', 'utf-8')
+            return result
+
+        elif char in [b'?']:
+            self.print_help()
+            return b''
+
+        return char
+
+    @staticmethod
+    def print_help():
+        """ Prints TinyTerm's help menu to the screen. """
+
+        print("Tiny-term commands:")
+        print(r" [CTRL+a, (q, k, or \)]: Exit")
+        print(r" [CTRL+a, r]:            Send shell commands terminal-config")
+        print(r" [CTRL+a, CTRL+a]:       Send literal CTRL+a")
+        print(r" [CTRL+a, ?]:            Show this menu")
 
 
 def _create_parser():
