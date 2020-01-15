@@ -147,7 +147,7 @@ class SerialConsole(object):
                 "reset"
             ]
             prefix = bytes("\x01\x0B\ntrue\n", 'utf-8')
-            result = prefix + bytes(';'.join(commands) + '\n', 'utf-8')
+            result = prefix + bytes(' && '.join(commands) + '\n', 'utf-8')
             return result
 
         elif char in [b'?']:
@@ -173,7 +173,7 @@ def _create_parser():
     parser = argparse.ArgumentParser(description="""Launch a minimal serial
                                      console. Exit with [CTRL+a, q].""")
 
-    parser.add_argument('-d', '--device', dest='device',
+    parser.add_argument('-d', '-D','--device', dest='device',
                         default='/dev/ttyUSB0', help="Target serial port")
 
     parser.add_argument('-b', '--baud', dest='baud', default='115200',
