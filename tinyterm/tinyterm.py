@@ -47,9 +47,12 @@ def register_handler(signum, function, *args, **kwargs):
     old_handler = signal.getsignal(signum)
 
     def handler(signum, frame):
-        function(*args, **kwargs)
+        result = function(*args, **kwargs)
+
         if callable(old_handler):
             return old_handler(signum, frame)
+
+        return result
 
     signal.signal(signum, handler)
 
@@ -72,7 +75,7 @@ def reopen_stdin():
     tty.setcbreak(sys.stdin)
 
 
-class SerialConsole(object):
+class SerialConsole():
     """ Simple serial console. Passes all characters through as transparently
     as possible. Exit with [CTRL+a, q]. """
 
@@ -140,7 +143,7 @@ class SerialConsole(object):
             self.stop = True
             return b''
 
-        elif char in [b'r', b'R']:
+        if char in [b'r', b'R']:
             commands = [
                 "export TERM=%s" % os.getenv('TERM', 'vt100'),
                 "resize",
@@ -150,7 +153,7 @@ class SerialConsole(object):
             result = prefix + bytes(' && '.join(commands) + '\n', 'utf-8')
             return result
 
-        elif char in [b'?']:
+        if char in [b'?']:
             self.print_help()
             return b''
 
@@ -173,7 +176,7 @@ def _create_parser():
     parser = argparse.ArgumentParser(description="""Launch a minimal serial
                                      console. Exit with [CTRL+a, q].""")
 
-    parser.add_argument('-d', '-D','--device', dest='device',
+    parser.add_argument('-d', '-D', '--device', dest='device',
                         default='/dev/ttyUSB0', help="Target serial port")
 
     parser.add_argument('-b', '--baud', dest='baud', default='115200',
@@ -191,7 +194,21 @@ def main():
     parser = _create_parser()
     args = parser.parse_args()
     args.parity = args.parity.strip().upper()[0]
-    args.baud = int(args.baud)
+
+    if args.parity not in ['E', 'O', 'N']:
+        sys.stderr.write("Error: unknown parity setting [%s].\n" % args.parity)
+        sys.exit(1)
+
+    try:
+        args.baud = int(args.baud)
+    except ValueError:
+        sys.stderr.write("Error: couldn't parse baud rate [%s].\n" % args.baud)
+        sys.exit(1)
+
+    if not os.path.exists(args.device):
+        sys.stderr.write("Error: couldn't find device [%s].\n" % args.device)
+        sys.exit(1)
+
     console = SerialConsole(args.device, args.baud, args.parity)
     console()
 
