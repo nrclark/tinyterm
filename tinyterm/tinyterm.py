@@ -81,7 +81,9 @@ class SerialConsole():
 
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, device='/dev/ttyUSB0', baudrate=115200, parity='N'):
+    def __init__(self, device='/dev/ttyUSB0', baudrate=115200, parity='N',
+                 newline=b'\r\n'):
+
         self.port = serial.Serial(device, baudrate=baudrate, parity=parity,
                                   timeout=0)
         register_cleanup(self.port.close)
@@ -92,6 +94,7 @@ class SerialConsole():
         self.port.reset_output_buffer()
         self.ctrl_a = b'\x01'
         self.stop = False
+        self.newline = newline
 
         reopen_stdin()
 
@@ -124,6 +127,10 @@ class SerialConsole():
                         trap_next = False
                     elif char == self.ctrl_a:
                         trap_next = True
+                    elif char == b'\r':
+                        pass
+                    elif char == b'\n':
+                        outbuf.append(self.newline)
                     else:
                         outbuf.append(char)
 
@@ -185,6 +192,10 @@ def _create_parser():
     parser.add_argument('-p', '--parity', dest='parity', default='N',
                         help="Serial parity (default: None)")
 
+    parser.add_argument('-n', '--newline', dest='newline', default='\r\n',
+                        help="""Character(s) to transmit for newline (default:
+                        \\r\\n)""")
+
     return parser
 
 
@@ -209,7 +220,19 @@ def main():
         sys.stderr.write("Error: couldn't find device [%s].\n" % args.device)
         sys.exit(1)
 
-    console = SerialConsole(args.device, args.baud, args.parity)
+    parse_newline = True
+
+    for char in args.newline:
+        if char not in ('\\', 'r', 'n'):
+            parse_newline = False
+
+    if parse_newline:
+        args.newline = args.newline.replace('\\', '')
+        args.newline = args.newline.replace('r', '\r')
+        args.newline = args.newline.replace('n', '\n')
+
+    args.newline = args.newline.encode()
+    console = SerialConsole(args.device, args.baud, args.parity, args.newline)
     console()
 
 
