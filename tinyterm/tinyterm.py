@@ -107,7 +107,7 @@ class SerialConsole():
         self.stop = False
         outbuf = []
 
-        print("--- Press [CTRL+A] and then q to quit. ---")
+        print("--- Press [CTRL+a] and then ? for help. ---")
 
         while True:
             ready = select.select(targets, [], targets)
@@ -180,10 +180,10 @@ class SerialConsole():
 
         print("Tiny-term commands:")
         print(r" [CTRL+a, (q, k, or \)]: Exit")
-        print(r" [CTRL+a, r]:            Send terminal-configuration commands")
-        print(r" [CTRL+a, CTRL+A]:       Send literal CTRL+a")
-        print(r" [CTRL+z, CTRL+Z]:       Send literal CTRL+z")
         print(r" [CTRL+a, ?]:            Show this menu")
+        print(r" [CTRL+a, r]:            Send terminal-configuration commands")
+        print(r" [CTRL+a, CTRL+a]:       Send literal CTRL+a")
+        print(r" [CTRL+a, z]:            Send literal CTRL+z")
 
 
 def _create_parser():

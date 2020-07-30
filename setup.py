@@ -17,7 +17,7 @@ def package_files(directory):
 
 setup(
     name='tinyterm',
-    version="1.1",
+    version="1.2",
     description='Minimalistic serial console',
     long_description=open('README.md').read(),
     author='Nick Clark',
