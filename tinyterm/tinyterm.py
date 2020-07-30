@@ -127,9 +127,9 @@ class SerialConsole():
                         trap_next = False
                     elif char == self.ctrl_a:
                         trap_next = True
-                    elif char == b'\r':
+                    elif char == b'\r' and self.newline is not None:
                         pass
-                    elif char == b'\n':
+                    elif char == b'\n' and self.newline is not None:
                         outbuf.append(self.newline)
                     else:
                         outbuf.append(char)
@@ -197,9 +197,9 @@ def _create_parser():
     parser.add_argument('-p', '--parity', dest='parity', default='N',
                         help="Serial parity (default: None)")
 
-    parser.add_argument('-n', '--newline', dest='newline', default='\r\n',
+    parser.add_argument('-n', '--newline', dest='newline', default=None,
                         help="""Character(s) to transmit for newline (default:
-                        \\r\\n)""")
+                        passthru)""")
 
     return parser
 
@@ -225,18 +225,20 @@ def main():
         sys.stderr.write("Error: couldn't find device [%s].\n" % args.device)
         sys.exit(1)
 
-    parse_newline = True
+    if args.newline is not None:
+        parse_newline = True
 
-    for char in args.newline:
-        if char not in ('\\', 'r', 'n'):
-            parse_newline = False
+        for char in args.newline:
+            if char not in ('\\', 'r', 'n'):
+                parse_newline = False
 
-    if parse_newline:
-        args.newline = args.newline.replace('\\', '')
-        args.newline = args.newline.replace('r', '\r')
-        args.newline = args.newline.replace('n', '\n')
+        if parse_newline:
+            args.newline = args.newline.replace('\\', '')
+            args.newline = args.newline.replace('r', '\r')
+            args.newline = args.newline.replace('n', '\n')
 
-    args.newline = args.newline.encode()
+        args.newline = args.newline.encode()
+
     console = SerialConsole(args.device, args.baud, args.parity, args.newline)
     console()
 
