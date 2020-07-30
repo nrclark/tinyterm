@@ -11,7 +11,7 @@ import fcntl
 import atexit
 import termios
 import signal
-
+import subprocess as sp
 import serial
 
 
@@ -151,9 +151,14 @@ class SerialConsole():
             return b''
 
         if char in [b'r', b'R']:
+            columns = sp.check_output(["tput", "cols"]).decode().strip()
+            lines = sp.check_output(["tput", "lines"]).decode().strip()
             commands = [
                 "export TERM=%s" % os.getenv('TERM', 'vt100'),
                 "resize",
+                "export COLUMNS=%s" % columns,
+                "export LINES=%s" % lines,
+                "export TERM=%s" % os.getenv('TERM', 'vt100'),
                 "reset"
             ]
             prefix = bytes("\x01\x0B\ntrue\n", 'utf-8')
