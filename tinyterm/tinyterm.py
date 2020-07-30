@@ -169,6 +169,9 @@ class SerialConsole():
             self.print_help()
             return b''
 
+        if char in [b'z', b'Z']:
+            return bytes("\x1A", 'utf-8')
+
         return char
 
     @staticmethod
@@ -177,8 +180,9 @@ class SerialConsole():
 
         print("Tiny-term commands:")
         print(r" [CTRL+a, (q, k, or \)]: Exit")
-        print(r" [CTRL+a, r]:            Send shell commands terminal-config")
-        print(r" [CTRL+a, CTRL+a]:       Send literal CTRL+a")
+        print(r" [CTRL+a, r]:            Send terminal-configuration commands")
+        print(r" [CTRL+a, CTRL+A]:       Send literal CTRL+a")
+        print(r" [CTRL+z, CTRL+Z]:       Send literal CTRL+z")
         print(r" [CTRL+a, ?]:            Show this menu")
 
 
